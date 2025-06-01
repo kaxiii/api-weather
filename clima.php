@@ -2,110 +2,190 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Clima Actual</title>
+    <title>Clima Detallado</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f1f1f1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            display: flex;
-            gap: 20px;
-        }
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: #e8f0f8;
             padding: 20px;
-            width: 300px;
+        }
+
+        h1 {
             text-align: center;
         }
-        .card img {
-            width: 80px;
-            height: 80px;
+
+        form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
         }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #0077cc;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .tarjetas {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+            width: 280px;
+            text-align: center;
+        }
+
+        .card img.weather-icon {
+            width: 100px;
+            height: 100px;
+        }
+
+        .card iframe {
+            border: none;
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+        }
+
         .location {
             font-weight: bold;
+            font-size: 1.3em;
             margin-bottom: 10px;
         }
-        .temp {
-            font-size: 2em;
+
+        .big-value {
+            font-size: 2.2em;
+            font-weight: bold;
             margin: 10px 0;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card" id="card1">
-            <div>Obteniendo datos...</div>
-        </div>
-        <div class="card" id="card2" style="display: none;">
-            <div>Obteniendo detalles...</div>
-        </div>
+    <h1>Clima Detallado</h1>
+    <form id="buscador">
+        <input type="text" id="ciudad" placeholder="Escribe una ciudad..." required>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <div class="tarjetas">
+        <div class="card" id="card1">Esperando datos...</div>
+        <div class="card" id="card2"></div>
+        <div class="card" id="card3"></div>
+        <div class="card" id="card4"></div>
+        <div class="card" id="card5"></div>
     </div>
 
     <script>
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async function(position) {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
+        document.getElementById("buscador").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const ciudad = document.getElementById("ciudad").value.trim();
+            if (ciudad) {
+                buscarCiudad(ciudad);
+            }
+        });
 
-                // Obtener nombre del lugar
-                let nombreLugar = '';
-                try {
-                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-                    const geoData = await geoRes.json();
-                    nombreLugar = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || "Ubicación desconocida";
-                } catch (e) {
-                    nombreLugar = "Ubicación desconocida";
+        async function buscarCiudad(nombreCiudad) {
+            resetearTarjetas("Cargando datos...");
+            try {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreCiudad)}`);
+                const resultados = await geoRes.json();
+                if (resultados.length === 0) {
+                    resetearTarjetas("Ciudad no encontrada.");
+                    return;
                 }
 
-                // Obtener datos climáticos
-                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,relative_humidity_2m,uv_index`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const clima = data.current;
+                const lat = resultados[0].lat;
+                const lon = resultados[0].lon;
+                const nombre = resultados[0].display_name;
 
-                        const temperatura = clima.temperature_2m;
-                        const viento = clima.windspeed_10m;
-                        const humedad = clima.relative_humidity_2m;
-                        const uv = clima.uv_index;
-                        const codigoClima = clima.weathercode;
+                mostrarDatosClima(nombre, lat, lon);
+            } catch (err) {
+                resetearTarjetas("Error al buscar ciudad.");
+            }
+        }
 
-                        const descripcion = obtenerDescripcionClima(codigoClima);
-                        const icono = obtenerIconoClima(codigoClima);
+        async function mostrarDatosClima(nombreLugar, lat, lon) {
+            document.getElementById('card1').innerHTML = `
+                <div class="location">${nombreLugar}</div>
+                <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.01},${lat-0.01},${lon+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lon}"></iframe>
+            `;
 
-                        // Primera tarjeta (general)
-                        document.getElementById('card1').innerHTML = `
-                            <div class="location">${nombreLugar}</div>
-                            <img src="${icono}" alt="Clima">
-                            <div class="temp">${temperatura}°C</div>
-                            <div>${descripcion}</div>
-                            <div>Viento: ${viento} km/h</div>
-                        `;
+            try {
+                const climaRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weathercode,relative_humidity_2m,windspeed_10m,uv_index`);
+                const data = await climaRes.json();
+                const clima = data.current;
 
-                        // Segunda tarjeta (detalles)
-                        document.getElementById('card2').style.display = 'block';
-                        document.getElementById('card2').innerHTML = `
-                            <h3>Detalles</h3>
-                            <p><strong>Humedad:</strong> ${humedad}%</p>
-                            <p><strong>Índice UV:</strong> ${uv}</p>
-                            <p><strong>Viento:</strong> ${viento} km/h</p>
-                        `;
-                    })
-                    .catch(error => {
-                        document.getElementById('card1').innerText = 'Error al obtener el clima.';
-                        document.getElementById('card2').innerText = '';
-                    });
-            }, function() {
-                document.getElementById('card1').innerText = 'No se pudo obtener tu ubicación.';
-            });
-        } else {
-            document.getElementById('card1').innerText = 'Tu navegador no soporta geolocalización.';
+                const temp = clima.temperature_2m;
+                const sensacion = clima.apparent_temperature;
+                const code = clima.weathercode;
+                const icono = obtenerIconoClima(code);
+                const descripcion = obtenerDescripcionClima(code);
+                const humedad = clima.relative_humidity_2m;
+                const viento = clima.windspeed_10m;
+                const uv = clima.uv_index;
+
+                document.getElementById('card2').innerHTML = `
+                    <img src="${icono}" class="weather-icon" alt="Clima">
+                    <div><strong style="font-size: 1.2em;">${descripcion}</strong></div>
+                    <div class="big-value">${temp}°C</div>
+                    <div style="font-size: 1em;">Sensación: ${sensacion}°C</div>
+                `;
+
+                document.getElementById('card3').innerHTML = `
+                    <img src="https://img.icons8.com/ios-filled/100/000000/hygrometer.png" alt="Humedad" class="icon">
+                    <h3>Humedad</h3>
+                    <div class="big-value">${humedad}%</div>
+                `;
+
+                document.getElementById('card4').innerHTML = `
+                    <img src="https://img.icons8.com/ios-filled/100/000000/windy-weather.png" alt="Viento" class="icon">
+                    <h3>Viento</h3>
+                    <div class="big-value">${viento} km/h</div>
+                `;
+
+                document.getElementById('card5').innerHTML = `
+                    <img src="https://img.icons8.com/ios-filled/100/000000/sun.png" alt="UV" class="icon">
+                    <h3>Índice UV</h3>
+                    <div class="big-value">${uv}</div>
+                `;
+            } catch {
+                resetearTarjetas("Error al cargar clima.");
+            }
+        }
+
+        function resetearTarjetas(mensaje) {
+            document.getElementById('card1').innerHTML = mensaje;
+            for (let i = 2; i <= 5; i++) {
+                document.getElementById(`card${i}`).innerHTML = "";
+            }
         }
 
         function obtenerDescripcionClima(code) {
@@ -121,7 +201,7 @@
                 55: 'Llovizna intensa',
                 61: 'Lluvia ligera',
                 63: 'Lluvia moderada',
-                65: 'Lluvia fuerte',
+                65: 'Lluvia intensa',
                 80: 'Chubascos ligeros',
                 81: 'Chubascos moderados',
                 82: 'Chubascos intensos'
@@ -140,6 +220,12 @@
             };
             return `${base}${iconMap[code] || "01d"}@2x.png`;
         }
+
+        // Mostrar ubicación actual al cargar
+        navigator.geolocation?.getCurrentPosition(pos => {
+            const { latitude, longitude } = pos.coords;
+            mostrarDatosClima("Tu ubicación", latitude, longitude);
+        });
     </script>
 </body>
 </html>
