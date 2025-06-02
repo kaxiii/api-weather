@@ -2,7 +2,7 @@
 // save_records.php
 header('Content-Type: application/json');
 
-// Asegurar que el directorio data existe
+// Asegurar que el directorio 'data' existe
 if (!file_exists('data')) {
     mkdir('data', 0755, true);
 }
@@ -14,23 +14,31 @@ if ($data === null) {
     exit;
 }
 
-// Validar y sanitizar datos
+// Función para sanitizar y validar un registro
 function sanitizeRecord($record) {
+    // Si el valor es -Infinity, lo convertimos a null para el almacenamiento
+    $value = ($record['value'] === -INF || $record['value'] === -Infinity) ? null : $record['value'];
+    
     return [
-        'value' => filter_var($record['value'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'location' => preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_,]/u', '', $record['location']),
-        'date' => date('Y-m-d H:i:s', strtotime($record['date']))
+        'value' => is_numeric($value) ? floatval($value) : null,
+        'location' => isset($record['location']) ? 
+            preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_,]/u', '', $record['location']) : '',
+        'date' => isset($record['date']) && strtotime($record['date']) ? 
+            date('Y-m-d H:i:s', strtotime($record['date'])) : ''
     ];
 }
 
-$sanitizedData = [
-    'max_temp' => sanitizeRecord($data['max_temp']),
-    'min_temp' => sanitizeRecord($data['min_temp']),
-    'max_uv' => sanitizeRecord($data['max_uv']),
-    'max_wind' => sanitizeRecord($data['max_wind']),
-    'max_radiation' => sanitizeRecord($data['max_radiation'])
-];
+// Campos a sanitizar
+$fields = ['max_temp', 'min_temp', 'max_uv', 'max_wind', 'max_radiation', 'max_rain', 'max_snow'];
+$sanitizedData = [];
 
+foreach ($fields as $field) {
+    if (isset($data[$field])) {
+        $sanitizedData[$field] = sanitizeRecord($data[$field]);
+    }
+}
+
+// Guardar archivo
 file_put_contents('data/records.json', json_encode($sanitizedData, JSON_PRETTY_PRINT));
 
 echo json_encode(['success' => true]);

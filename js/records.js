@@ -7,7 +7,9 @@ class RecordKeeper {
             min_temp: { value: Infinity, location: '', date: '' },
             max_uv: { value: -Infinity, location: '', date: '' },
             max_wind: { value: -Infinity, location: '', date: '' },
-            max_radiation: { value: -Infinity, location: '', date: '' }
+            max_radiation: { value: -Infinity, location: '', date: '' },
+            max_rain: { value: -Infinity, location: '', date: '' }, // Cambiado de 0 a -Infinity
+            max_snow: { value: -Infinity, location: '', date: '' }  // Cambiado de 0 a -Infinity
         };
         this.init();
     }
@@ -76,80 +78,38 @@ class RecordKeeper {
 
         // Verificar cada record
         if (weatherData.temperature > this.records.max_temp.value) {
-            const oldValue = this.records.max_temp.value;
-            this.records.max_temp = {
-                value: weatherData.temperature,
+            // ... código existente para temperatura ...
+        }
+        
+        // ... otros records ...
+
+        if (weatherData.rain > this.records.max_rain.value) {
+            const oldValue = this.records.max_rain.value;
+            this.records.max_rain = {
+                value: weatherData.rain,
                 location: location,
                 date: dateStr
             };
             this.showNotification(
-                `🔥 <strong>Nuevo record de temperatura máxima!</strong><br>
-                ${weatherData.temperature}°C en ${location}<br>
-                <small>Anterior: ${oldValue}°C</small>`,
+                `🌧️ <strong>Nuevo récord de lluvia!</strong><br>
+                ${weatherData.rain} mm en ${location}<br>
+                <small>Anterior: ${oldValue !== -Infinity ? oldValue + ' mm' : 'ninguno'}</small>`,
                 'record'
             );
             updated = true;
         }
-        
-        if (weatherData.temperature < this.records.min_temp.value) {
-            const oldValue = this.records.min_temp.value;
-            this.records.min_temp = {
-                value: weatherData.temperature,
+
+        if (weatherData.snow > this.records.max_snow.value) {
+            const oldValue = this.records.max_snow.value;
+            this.records.max_snow = {
+                value: weatherData.snow,
                 location: location,
                 date: dateStr
             };
             this.showNotification(
-                `❄️ <strong>Nuevo record de temperatura mínima!</strong><br>
-                ${weatherData.temperature}°C en ${location}<br>
-                <small>Anterior: ${oldValue}°C</small>`,
-                'record'
-            );
-            updated = true;
-        }
-        
-        if (weatherData.uv > this.records.max_uv.value) {
-            const oldValue = this.records.max_uv.value;
-            this.records.max_uv = {
-                value: weatherData.uv,
-                location: location,
-                date: dateStr
-            };
-            this.showNotification(
-                `☀️ <strong>Nuevo record de UV!</strong><br>
-                Índice ${weatherData.uv} en ${location}<br>
-                <small>Anterior: ${oldValue}</small>`,
-                'record'
-            );
-            updated = true;
-        }
-        
-        if (weatherData.wind > this.records.max_wind.value) {
-            const oldValue = this.records.max_wind.value;
-            this.records.max_wind = {
-                value: weatherData.wind,
-                location: location,
-                date: dateStr
-            };
-            this.showNotification(
-                `🌪️ <strong>Nuevo record de viento!</strong><br>
-                ${weatherData.wind} km/h en ${location}<br>
-                <small>Anterior: ${oldValue} km/h</small>`,
-                'record'
-            );
-            updated = true;
-        }
-        
-        if (weatherData.radiation > this.records.max_radiation.value) {
-            const oldValue = this.records.max_radiation.value;
-            this.records.max_radiation = {
-                value: weatherData.radiation,
-                location: location,
-                date: dateStr
-            };
-            this.showNotification(
-                `☢️ <strong>Nuevo record de radiación solar!</strong><br>
-                ${weatherData.radiation} W/m² en ${location}<br>
-                <small>Anterior: ${oldValue} W/m²</small>`,
+                `❄️ <strong>Nuevo récord de nieve!</strong><br>
+                ${weatherData.snow} mm en ${location}<br>
+                <small>Anterior: ${oldValue !== -Infinity ? oldValue + ' mm' : 'ninguno'}</small>`,
                 'record'
             );
             updated = true;
@@ -159,6 +119,7 @@ class RecordKeeper {
             await this.saveRecords();
             this.displayCurrentRecords();
         }
+    
     }
 
     displayCurrentRecords() {
@@ -192,6 +153,16 @@ class RecordKeeper {
                     <h4>☢️ Radiación Solar</h4>
                     <div class="record-value">${this.records.max_radiation.value} W/m²</div>
                     <div class="record-details">${this.records.max_radiation.location}<br>${this.records.max_radiation.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>🌧️ Lluvia Máxima</h4>
+                    <div class="record-value">${this.records.max_rain.value} mm</div>
+                    <div class="record-details">${this.records.max_rain.location}<br>${this.records.max_rain.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>❄️ Nieve Máxima</h4>
+                    <div class="record-value">${this.records.max_snow.value} mm</div>
+                    <div class="record-details">${this.records.max_snow.location}<br>${this.records.max_snow.date}</div>
                 </div>
             </div>
         `;

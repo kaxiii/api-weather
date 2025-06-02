@@ -48,6 +48,16 @@
                 <div class="record-value">-- W/m²</div>
                 <div class="record-details">Ubicación: --<br>Fecha: --</div>
             </div>
+            <div class="record-card">
+                <h4>🌧️ Lluvia Máxima</h4>
+                <div class="record-value">-- mm</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+            <div class="record-card">
+                <h4>❄️ Nieve Máxima</h4>
+                <div class="record-value">-- mm</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
         </div>
     </div>
 
@@ -112,6 +122,20 @@
                 records.max_radiation.location,
                 records.max_radiation.date
             );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(6)',
+                `${records.max_rain.value} mm`,
+                records.max_rain.location,
+                records.max_rain.date
+            );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(7)',
+                `${records.max_snow.value} mm`,
+                records.max_snow.location,
+                records.max_snow.date
+            );
         }
 
         // Cargar records al iniciar
@@ -151,29 +175,31 @@
                 const uvMatch = uvHtml.match(/class='big-value'.*?>([\d.]+)</);
                 const vientoMatch = vientoHtml.match(/class='big-value'>([\d.]+) km\/h/);
                 const radiacionMatch = uvHtml.match(/Radiación solar: <strong>([\d.]+) W\/m²/);
+                const rainMatch = climaHtml.match(/Lluvia: ([0-9.]+) mm/);
+                const snowMatch = climaHtml.match(/Nieve: ([0-9.]+) mm/);
 
-                if (tempMatch && uvMatch && vientoMatch && radiacionMatch) {
-                    const weatherData = {
-                        temperature: parseFloat(tempMatch[1]),
-                        uv: parseFloat(uvMatch[1]),
-                        wind: parseFloat(vientoMatch[1]),
-                        radiation: parseFloat(radiacionMatch[1])
-                    };
-                    
-                    // Verificar records
-                    if (typeof recordKeeper !== 'undefined') {
-                        await recordKeeper.checkForRecords(ciudad, weatherData);
-                        // Recargar los records después de actualizarlos
-                        await loadInitialRecords();
-                    }
+                const weatherData = {
+                    temperature: tempMatch ? parseFloat(tempMatch[1]) : null,
+                    uv: uvMatch ? parseFloat(uvMatch[1]) : null,
+                    wind: vientoMatch ? parseFloat(vientoMatch[1]) : null,
+                    radiation: radiacionMatch ? parseFloat(radiacionMatch[1]) : null,
+                    rain: rainMatch ? parseFloat(rainMatch[1]) : 0,
+                    snow: snowMatch ? parseFloat(snowMatch[1]) : 0
+                };
+                
+                // Verificar records solo si tenemos datos válidos
+                if (weatherData.temperature !== null && typeof recordKeeper !== 'undefined') {
+                    await recordKeeper.checkForRecords(ciudad, weatherData);
+                    // Recargar los records después de actualizarlos
+                    await loadInitialRecords();
                 }
 
-                // Mostrar las tarjetas
+                // Resto del código para mostrar tarjetas...
                 contenedor.innerHTML = '';
                 const tarjetas = ['ubicacion', 'clima', 'humedad', 'viento', 'uv'];
                 const htmls = [null, climaHtml, humedadHtml, vientoHtml, uvHtml];
 
-                // Obtener ubicación (puede ser más lento)
+                // Obtener ubicación
                 const ubicacionRes = await fetch(`cards/ubicacion.php`, { 
                     method: 'POST', 
                     body: new URLSearchParams({ ciudad }) 

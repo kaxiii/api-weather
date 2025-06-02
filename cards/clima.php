@@ -23,7 +23,7 @@ $lat = $geo[0]['lat'];
 $lon = $geo[0]['lon'];
 
 // Obtener datos del clima desde Open-Meteo
-$weather_url = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,apparent_temperature,weathercode";
+$weather_url = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,apparent_temperature,weathercode,precipitation,rain,snowfall";
 $weather = json_decode(file_get_contents($weather_url), true);
 
 if (!isset($weather['current'])) {
@@ -35,6 +35,9 @@ $clima = $weather['current'];
 $temp = $clima['temperature_2m'];
 $sensacion = $clima['apparent_temperature'];
 $code = $clima['weathercode'];
+$precipitacion = $clima['precipitation'];
+$lluvia = $clima['rain'];
+$nieve = $clima['snowfall'];
 
 // Obtener ícono
 function obtenerIconoClima($code) {
@@ -79,3 +82,11 @@ echo "<img src='$icono' class='weather-icon' alt='Clima'>";
 echo "<div><strong style='font-size: 1.2em;'>$descripcion</strong></div>";
 echo "<div class='big-value'>{$temp}°C</div>";
 echo "<div style='font-size: 1em;'>Sensación: {$sensacion}°C</div>";
+echo "<div style='font-size: 1em;'>Precipitación: {$precipitacion} mm</div>";
+if ($lluvia > 0) {
+    echo "<div style='font-size: 0.95em;'>🌧️ Lluvia: {$lluvia} mm</div>";
+}
+if ($nieve > 0) {
+    echo "<div style='font-size: 0.95em;'>❄️ Nieve: {$nieve} mm</div>";
+}
+
