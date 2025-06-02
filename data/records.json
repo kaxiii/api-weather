@@ -1,0 +1,37 @@
+{
+    "max_temp": {
+        "value": null,
+        "location": "",
+        "date": ""
+    },
+    "min_temp": {
+        "value": null,
+        "location": "",
+        "date": ""
+    },
+    "max_uv": {
+        "value": null,
+        "location": "",
+        "date": ""
+    },
+    "max_wind": {
+        "value": null,
+        "location": "",
+        "date": ""
+    },
+    "max_radiation": {
+        "value": null,
+        "location": "",
+        "date": ""
+    },
+    "max_rain": {
+        "value": 0,
+        "location": "Villanueva de Castell\u00f3n",
+        "date": "2025-02-06 14:17:42"
+    },
+    "max_snow": {
+        "value": 0,
+        "location": "Villanueva de Castell\u00f3n",
+        "date": "2025-02-06 14:17:42"
+    }
+}

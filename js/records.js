@@ -37,16 +37,39 @@ class RecordKeeper {
 
     async saveRecords() {
         try {
+            // Preparar datos para enviar, asegurando que todos los records estén incluidos
+            const dataToSave = {
+                max_temp: this.records.max_temp,
+                min_temp: this.records.min_temp,
+                max_uv: this.records.max_uv,
+                max_wind: this.records.max_wind,
+                max_radiation: this.records.max_radiation,
+                max_rain: this.records.max_rain,
+                max_snow: this.records.max_snow
+            };
+
+            console.log('Enviando datos:', dataToSave); // Para depuración
+
             const response = await fetch('save_records.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(this.records)
+                body: JSON.stringify(dataToSave)
             });
-            return response.ok;
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                console.error('Error al guardar records:', result.error || 'Error desconocido');
+                this.showNotification('Error al guardar records', 'error');
+                return false;
+            }
+            
+            return true;
         } catch (error) {
             console.error("Error saving records:", error);
+            this.showNotification('Error de conexión al guardar records', 'error');
             return false;
         }
     }
