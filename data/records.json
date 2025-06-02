@@ -1,0 +1,27 @@
+{
+    "max_temp": {
+        "value": "37.3",
+        "location": "hanoi",
+        "date": "2025-02-06 12:18:10"
+    },
+    "min_temp": {
+        "value": "9.2",
+        "location": "tromso",
+        "date": "2025-02-06 12:21:09"
+    },
+    "max_uv": {
+        "value": "6.1",
+        "location": "paris",
+        "date": "2025-02-06 12:17:02"
+    },
+    "max_wind": {
+        "value": "27.4",
+        "location": "tromso",
+        "date": "2025-02-06 12:21:09"
+    },
+    "max_radiation": {
+        "value": "798",
+        "location": "Monc\u00f3far",
+        "date": "2025-02-06 12:23:11"
+    }
+}
