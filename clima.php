@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clima Detallado</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="js/records.js" defer></script>
 </head>
 <body>
     <h1>Clima Detallado</h1>
@@ -27,46 +28,71 @@
             }
         });
 
-        function fetchTarjetas(ciudad) {
+        async function fetchTarjetas(ciudad) {
             const contenedor = document.getElementById("contenedor-tarjetas");
             contenedor.innerHTML = '<div class="card loading">Buscando datos para: ' + ciudad + '</div>';
 
-            const tarjetas = ['ubicacion', 'clima', 'humedad', 'viento', 'uv'];
+            try {
+                // Obtener datos meteorológicos
+                const [climaRes, humedadRes, vientoRes, uvRes] = await Promise.all([
+                    fetch(`cards/clima.php`, { method: 'POST', body: new URLSearchParams({ ciudad }) }),
+                    fetch(`cards/humedad.php`, { method: 'POST', body: new URLSearchParams({ ciudad }) }),
+                    fetch(`cards/viento.php`, { method: 'POST', body: new URLSearchParams({ ciudad }) }),
+                    fetch(`cards/uv.php`, { method: 'POST', body: new URLSearchParams({ ciudad }) })
+                ]);
 
-            // Crear tarjetas vacías con IDs predefinidos
-            tarjetas.forEach(nombre => {
-                const card = document.createElement('div');
-                card.className = 'card loading';
-                card.id = `card-${nombre}`;
-                card.innerHTML = `Cargando ${nombre}...`;
-                contenedor.appendChild(card);
-            });
+                const [climaHtml, humedadHtml, vientoHtml, uvHtml] = await Promise.all([
+                    climaRes.text(),
+                    humedadRes.text(),
+                    vientoRes.text(),
+                    uvRes.text()
+                ]);
 
-            // Luego hacer fetch y llenar cada una por ID
-            tarjetas.forEach(nombre => {
-                const formData = new FormData();
-                formData.append('ciudad', ciudad);
+                // Extraer valores numéricos de los datos
+                const tempMatch = climaHtml.match(/class='big-value'>([\d.]+)°C/);
+                const uvMatch = uvHtml.match(/class='big-value'.*?>([\d.]+)</);
+                const vientoMatch = vientoHtml.match(/class='big-value'>([\d.]+) km\/h/);
+                const radiacionMatch = uvHtml.match(/Radiación solar: <strong>([\d.]+) W\/m²/);
 
-                fetch(`cards/${nombre}.php`, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.text())
-                .then(html => {
-                    const target = document.getElementById(`card-${nombre}`);
-                    if (target) {
-                        target.innerHTML = html;
-                        target.classList.remove('loading');
+                if (tempMatch && uvMatch && vientoMatch && radiacionMatch) {
+                    const weatherData = {
+                        temperature: parseFloat(tempMatch[1]),
+                        uv: parseFloat(uvMatch[1]),
+                        wind: parseFloat(vientoMatch[1]),
+                        radiation: parseFloat(radiacionMatch[1])
+                    };
+                    
+                    // Verificar records
+                    if (typeof recordKeeper !== 'undefined') {
+                        recordKeeper.checkForRecords(ciudad, weatherData);
                     }
-                })
-                .catch(() => {
-                    const target = document.getElementById(`card-${nombre}`);
-                    if (target) {
-                        target.innerHTML = `<p>Error al cargar ${nombre}</p>`;
-                        target.classList.remove('loading');
-                    }
+                }
+
+                // Mostrar las tarjetas
+                contenedor.innerHTML = '';
+                const tarjetas = ['ubicacion', 'clima', 'humedad', 'viento', 'uv'];
+                const htmls = [null, climaHtml, humedadHtml, vientoHtml, uvHtml];
+
+                // Obtener ubicación (puede ser más lento)
+                const ubicacionRes = await fetch(`cards/ubicacion.php`, { 
+                    method: 'POST', 
+                    body: new URLSearchParams({ ciudad }) 
                 });
-            });
+                const ubicacionHtml = await ubicacionRes.text();
+                htmls[0] = ubicacionHtml;
+
+                // Mostrar todas las tarjetas
+                tarjetas.forEach((nombre, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = htmls[index];
+                    contenedor.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                contenedor.innerHTML = '<div class="card error">Error al cargar los datos meteorológicos</div>';
+            }
         }
 
         // Al iniciar, mostrar ubicación actual
@@ -81,6 +107,9 @@
             } catch {
                 fetchTarjetas("Madrid");
             }
+        }, (error) => {
+            console.error("Error getting location:", error);
+            fetchTarjetas("Madrid");
         });
     </script>
 </body>
