@@ -2,8 +2,13 @@
 class RecordKeeper {
     constructor() {
         this.recordsFile = 'data/records.json';
-        this.records = {};
-        this.currentLocation = null;
+        this.records = {
+            max_temp: { value: -Infinity, location: '', date: '' },
+            min_temp: { value: Infinity, location: '', date: '' },
+            max_uv: { value: -Infinity, location: '', date: '' },
+            max_wind: { value: -Infinity, location: '', date: '' },
+            max_radiation: { value: -Infinity, location: '', date: '' }
+        };
         this.init();
     }
 
@@ -16,13 +21,15 @@ class RecordKeeper {
         try {
             const response = await fetch(this.recordsFile);
             if (response.ok) {
-                this.records = await response.json();
-            } else {
-                this.records = {};
+                const data = await response.json();
+                // Merge con valores por defecto
+                this.records = {
+                    ...this.records,
+                    ...data
+                };
             }
         } catch (error) {
             console.error("Error loading records:", error);
-            this.records = {};
         }
     }
 
@@ -45,17 +52,13 @@ class RecordKeeper {
     setupNotificationSystem() {
         const notificationContainer = document.createElement('div');
         notificationContainer.id = 'notification-container';
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.top = '20px';
-        notificationContainer.style.right = '20px';
-        notificationContainer.style.zIndex = '1000';
         document.body.appendChild(notificationContainer);
     }
 
     showNotification(message, type = 'info') {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        notification.textContent = message;
+        notification.innerHTML = message;
         
         const container = document.getElementById('notification-container');
         container.appendChild(notification);
@@ -67,62 +70,147 @@ class RecordKeeper {
     }
 
     async checkForRecords(location, weatherData) {
-        this.currentLocation = location;
-        
-        if (!this.records[location]) {
-            this.records[location] = {
-                max_temp: weatherData.temperature,
-                min_temp: weatherData.temperature,
-                max_uv: weatherData.uv,
-                max_wind: weatherData.wind,
-                max_radiation: weatherData.radiation,
-                updated: new Date().toISOString()
-            };
-            await this.saveRecords();
-            this.showNotification(`¡Nuevos records establecidos para ${location}!`, 'success');
-            return;
-        }
-
+        const now = new Date();
+        const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
         let updated = false;
-        const locationRecords = this.records[location];
-        
+
         // Verificar cada record
-        if (weatherData.temperature > locationRecords.max_temp) {
-            this.showNotification(`¡Nuevo record de temperatura máxima en ${location}: ${weatherData.temperature}°C (antes ${locationRecords.max_temp}°C)`, 'record');
-            locationRecords.max_temp = weatherData.temperature;
+        if (weatherData.temperature > this.records.max_temp.value) {
+            const oldValue = this.records.max_temp.value;
+            this.records.max_temp = {
+                value: weatherData.temperature,
+                location: location,
+                date: dateStr
+            };
+            this.showNotification(
+                `🔥 <strong>Nuevo record de temperatura máxima!</strong><br>
+                ${weatherData.temperature}°C en ${location}<br>
+                <small>Anterior: ${oldValue}°C</small>`,
+                'record'
+            );
             updated = true;
         }
         
-        if (weatherData.temperature < locationRecords.min_temp) {
-            this.showNotification(`¡Nuevo record de temperatura mínima en ${location}: ${weatherData.temperature}°C (antes ${locationRecords.min_temp}°C)`, 'record');
-            locationRecords.min_temp = weatherData.temperature;
+        if (weatherData.temperature < this.records.min_temp.value) {
+            const oldValue = this.records.min_temp.value;
+            this.records.min_temp = {
+                value: weatherData.temperature,
+                location: location,
+                date: dateStr
+            };
+            this.showNotification(
+                `❄️ <strong>Nuevo record de temperatura mínima!</strong><br>
+                ${weatherData.temperature}°C en ${location}<br>
+                <small>Anterior: ${oldValue}°C</small>`,
+                'record'
+            );
             updated = true;
         }
         
-        if (weatherData.uv > locationRecords.max_uv) {
-            this.showNotification(`¡Nuevo record de UV en ${location}: ${weatherData.uv} (antes ${locationRecords.max_uv})`, 'record');
-            locationRecords.max_uv = weatherData.uv;
+        if (weatherData.uv > this.records.max_uv.value) {
+            const oldValue = this.records.max_uv.value;
+            this.records.max_uv = {
+                value: weatherData.uv,
+                location: location,
+                date: dateStr
+            };
+            this.showNotification(
+                `☀️ <strong>Nuevo record de UV!</strong><br>
+                Índice ${weatherData.uv} en ${location}<br>
+                <small>Anterior: ${oldValue}</small>`,
+                'record'
+            );
             updated = true;
         }
         
-        if (weatherData.wind > locationRecords.max_wind) {
-            this.showNotification(`¡Nuevo record de viento en ${location}: ${weatherData.wind} km/h (antes ${locationRecords.max_wind} km/h)`, 'record');
-            locationRecords.max_wind = weatherData.wind;
+        if (weatherData.wind > this.records.max_wind.value) {
+            const oldValue = this.records.max_wind.value;
+            this.records.max_wind = {
+                value: weatherData.wind,
+                location: location,
+                date: dateStr
+            };
+            this.showNotification(
+                `🌪️ <strong>Nuevo record de viento!</strong><br>
+                ${weatherData.wind} km/h en ${location}<br>
+                <small>Anterior: ${oldValue} km/h</small>`,
+                'record'
+            );
             updated = true;
         }
         
-        if (weatherData.radiation > locationRecords.max_radiation) {
-            this.showNotification(`¡Nuevo record de radiación solar en ${location}: ${weatherData.radiation} W/m² (antes ${locationRecords.max_radiation} W/m²)`, 'record');
-            locationRecords.max_radiation = weatherData.radiation;
+        if (weatherData.radiation > this.records.max_radiation.value) {
+            const oldValue = this.records.max_radiation.value;
+            this.records.max_radiation = {
+                value: weatherData.radiation,
+                location: location,
+                date: dateStr
+            };
+            this.showNotification(
+                `☢️ <strong>Nuevo record de radiación solar!</strong><br>
+                ${weatherData.radiation} W/m² en ${location}<br>
+                <small>Anterior: ${oldValue} W/m²</small>`,
+                'record'
+            );
             updated = true;
         }
         
         if (updated) {
-            locationRecords.updated = new Date().toISOString();
             await this.saveRecords();
+            this.displayCurrentRecords();
         }
+    }
+
+    displayCurrentRecords() {
+        const recordsContainer = document.getElementById('records-container');
+        if (!recordsContainer) return;
+
+        recordsContainer.innerHTML = `
+            <h3>Récords Absolutos</h3>
+            <div class="records-grid">
+                <div class="record-card">
+                    <h4>🌡️ Temp. Máxima</h4>
+                    <div class="record-value">${this.records.max_temp.value}°C</div>
+                    <div class="record-details">${this.records.max_temp.location}<br>${this.records.max_temp.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>❄️ Temp. Mínima</h4>
+                    <div class="record-value">${this.records.min_temp.value}°C</div>
+                    <div class="record-details">${this.records.min_temp.location}<br>${this.records.min_temp.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>☀️ Índice UV</h4>
+                    <div class="record-value">${this.records.max_uv.value}</div>
+                    <div class="record-details">${this.records.max_uv.location}<br>${this.records.max_uv.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>🌪️ Viento</h4>
+                    <div class="record-value">${this.records.max_wind.value} km/h</div>
+                    <div class="record-details">${this.records.max_wind.location}<br>${this.records.max_wind.date}</div>
+                </div>
+                <div class="record-card">
+                    <h4>☢️ Radiación Solar</h4>
+                    <div class="record-value">${this.records.max_radiation.value} W/m²</div>
+                    <div class="record-details">${this.records.max_radiation.location}<br>${this.records.max_radiation.date}</div>
+                </div>
+            </div>
+        `;
     }
 }
 
 // Crear instancia global
 const recordKeeper = new RecordKeeper();
+
+// Mostrar records al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    // Crear contenedor para mostrar los records
+    const recordsContainer = document.createElement('div');
+    recordsContainer.id = 'records-container';
+    recordsContainer.className = 'card';
+    document.querySelector('body').appendChild(recordsContainer);
+    
+    // Mostrar records después de cargarlos
+    setTimeout(() => {
+        recordKeeper.displayCurrentRecords();
+    }, 500);
+});

@@ -14,21 +14,24 @@ if ($data === null) {
     exit;
 }
 
-// Validar y sanitizar datos (ejemplo básico)
-$sanitizedData = [];
-foreach ($data as $location => $records) {
-    $sanitizedLocation = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_,]/u', '', $location);
-    $sanitizedData[$sanitizedLocation] = [
-        'max_temp' => filter_var($records['max_temp'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'min_temp' => filter_var($records['min_temp'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'max_uv' => filter_var($records['max_uv'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'max_wind' => filter_var($records['max_wind'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'max_radiation' => filter_var($records['max_radiation'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-        'updated' => date('Y-m-d\TH:i:s\Z', strtotime($records['updated']))
-    ];
-}
+// Validar y sanitizar datos
+$sanitizedData = [
+    'max_temp' => $this->sanitizeRecord($data['max_temp']),
+    'min_temp' => $this->sanitizeRecord($data['min_temp']),
+    'max_uv' => $this->sanitizeRecord($data['max_uv']),
+    'max_wind' => $this->sanitizeRecord($data['max_wind']),
+    'max_radiation' => $this->sanitizeRecord($data['max_radiation'])
+];
 
 file_put_contents('data/records.json', json_encode($sanitizedData, JSON_PRETTY_PRINT));
 
 echo json_encode(['success' => true]);
+
+function sanitizeRecord($record) {
+    return [
+        'value' => filter_var($record['value'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
+        'location' => preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_,]/u', '', $record['location']),
+        'date' => date('Y-m-d H:i:s', strtotime($record['date']))
+    ];
+}
 ?>
