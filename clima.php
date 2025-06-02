@@ -19,7 +19,105 @@
         <div class="card loading">Cargando información meteorológica...</div>
     </div>
 
+    <!-- Sección de Records -->
+    <div id="records-container" class="card">
+        <h3>Récords Absolutos</h3>
+        <div class="records-grid">
+            <div class="record-card">
+                <h4>🌡️ Temp. Máxima</h4>
+                <div class="record-value">-- °C</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+            <div class="record-card">
+                <h4>❄️ Temp. Mínima</h4>
+                <div class="record-value">-- °C</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+            <div class="record-card">
+                <h4>☀️ Índice UV</h4>
+                <div class="record-value">--</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+            <div class="record-card">
+                <h4>🌪️ Viento</h4>
+                <div class="record-value">-- km/h</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+            <div class="record-card">
+                <h4>☢️ Radiación Solar</h4>
+                <div class="record-value">-- W/m²</div>
+                <div class="record-details">Ubicación: --<br>Fecha: --</div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Función para cargar los records iniciales
+        async function loadInitialRecords() {
+            try {
+                const response = await fetch('data/records.json');
+                if (response.ok) {
+                    const records = await response.json();
+                    updateRecordsDisplay(records);
+                }
+            } catch (error) {
+                console.error("Error loading records:", error);
+            }
+        }
+
+        // Función para actualizar la visualización de records
+        function updateRecordsDisplay(records) {
+            if (!records) return;
+
+            const updateRecordCard = (selector, value, location, date) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.querySelector('.record-value').textContent = value;
+                    element.querySelector('.record-details').innerHTML = 
+                        `Ubicación: ${location}<br>Fecha: ${date}`;
+                }
+            };
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(1)',
+                `${records.max_temp.value}°C`,
+                records.max_temp.location,
+                records.max_temp.date
+            );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(2)',
+                `${records.min_temp.value}°C`,
+                records.min_temp.location,
+                records.min_temp.date
+            );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(3)',
+                records.max_uv.value,
+                records.max_uv.location,
+                records.max_uv.date
+            );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(4)',
+                `${records.max_wind.value} km/h`,
+                records.max_wind.location,
+                records.max_wind.date
+            );
+
+            updateRecordCard(
+                '.records-grid > div:nth-child(5)',
+                `${records.max_radiation.value} W/m²`,
+                records.max_radiation.location,
+                records.max_radiation.date
+            );
+        }
+
+        // Cargar records al iniciar
+        document.addEventListener('DOMContentLoaded', loadInitialRecords);
+
+        // Resto del código existente...
         document.getElementById("buscador").addEventListener("submit", function(e) {
             e.preventDefault();
             const ciudad = document.getElementById("ciudad").value.trim();
@@ -64,7 +162,9 @@
                     
                     // Verificar records
                     if (typeof recordKeeper !== 'undefined') {
-                        recordKeeper.checkForRecords(ciudad, weatherData);
+                        await recordKeeper.checkForRecords(ciudad, weatherData);
+                        // Recargar los records después de actualizarlos
+                        await loadInitialRecords();
                     }
                 }
 

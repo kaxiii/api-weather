@@ -15,18 +15,6 @@ if ($data === null) {
 }
 
 // Validar y sanitizar datos
-$sanitizedData = [
-    'max_temp' => $this->sanitizeRecord($data['max_temp']),
-    'min_temp' => $this->sanitizeRecord($data['min_temp']),
-    'max_uv' => $this->sanitizeRecord($data['max_uv']),
-    'max_wind' => $this->sanitizeRecord($data['max_wind']),
-    'max_radiation' => $this->sanitizeRecord($data['max_radiation'])
-];
-
-file_put_contents('data/records.json', json_encode($sanitizedData, JSON_PRETTY_PRINT));
-
-echo json_encode(['success' => true]);
-
 function sanitizeRecord($record) {
     return [
         'value' => filter_var($record['value'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
@@ -34,4 +22,16 @@ function sanitizeRecord($record) {
         'date' => date('Y-m-d H:i:s', strtotime($record['date']))
     ];
 }
+
+$sanitizedData = [
+    'max_temp' => sanitizeRecord($data['max_temp']),
+    'min_temp' => sanitizeRecord($data['min_temp']),
+    'max_uv' => sanitizeRecord($data['max_uv']),
+    'max_wind' => sanitizeRecord($data['max_wind']),
+    'max_radiation' => sanitizeRecord($data['max_radiation'])
+];
+
+file_put_contents('data/records.json', json_encode($sanitizedData, JSON_PRETTY_PRINT));
+
+echo json_encode(['success' => true]);
 ?>
